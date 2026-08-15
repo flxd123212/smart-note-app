@@ -1,6 +1,6 @@
 {
   "name": "smart-note-app",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "智能便签工作安排应用 - Smart Note & Workflow Scheduler",
   "main": "main.js",
   "scripts": {
@@ -38,6 +38,13 @@
       "runAfterFinish": true,
       "shortcutName": "智能便签"
     },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "YOUR_GITHUB_USERNAME",
+        "repo": "smart-note-app"
+      }
+    ],
     "extraMetadata": {
       "main": "main.js"
     }
@@ -54,6 +61,7 @@
     "electron-builder": "^24.9.1"
   },
   "dependencies": {
-    "electron-packager": "^15.5.2"
+    "electron-packager": "^15.5.2",
+    "electron-updater": "^6.8.9"
   }
 }

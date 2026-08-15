@@ -86,6 +86,14 @@ async function init() {
   $('#settingSmartSchedule').checked = settings.smartSchedule !== false;
   $('#settingWeatherProvider').value = settings.weatherProvider || 'openmeteo';
   if (settings.weatherApiKey) $('#settingWeatherApiKey').value = settings.weatherApiKey;
+
+  // App info & auto update
+  if (window.api.getAppInfo) {
+    window.api.getAppInfo().then(info => {
+      $('#appVersionText').textContent = `v${info.version}` + (info.isPackaged ? '' : '（开发模式）');
+    });
+    window.api.onUpdateStatus(handleUpdateStatus);
+  }
 }
 
 /* ─── Theme ───────────────────────────────────────────────────────────── */
@@ -338,11 +346,39 @@ function closeTaskModal() {
 
 async function scheduleSuggestion(taskData, newTask) {
   const now = new Date();
-  let suggested = new Date(now);
-  suggested.setHours(suggested.getHours() + 1, 0, 0, 0);
-  const busySlots = tasks.filter(t => t.reminderTime && !t.done).map(t => new Date(t.reminderTime).getTime());
-  const isBusy = busySlots.some(t => Math.abs(t - suggested.getTime()) < 3600000);
-  if (isBusy) { suggested = new Date(now); suggested.setDate(suggested.getDate() + 1); suggested.setHours(9, 0, 0, 0); }
+
+  // 用 SmartRecommend.findFreeSlots 在 8:00-22:00 之间找真实空闲时段（自动避开已有任务占用的 1 小时）
+  const toDateStr = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  const tryFindSlot = (dayOffset) => {
+    const d = new Date(now);
+    d.setDate(d.getDate() + dayOffset);
+    const slots = (window.SmartRecommend && SmartRecommend.findFreeSlots)
+      ? SmartRecommend.findFreeSlots(tasks, toDateStr(d))
+      : [];
+    for (const slot of slots) {
+      if (dayOffset === 0) {
+        if (slot.end <= now) continue;               // 今天的空闲时段要还没结束
+        if (slot.start <= now) {                     // 空闲时段正在进行中
+          const nextHour = new Date(now);
+          nextHour.setMinutes(0, 0, 0);
+          nextHour.setHours(nextHour.getHours() + 1);
+          if (nextHour < slot.end) return nextHour;  // 下一个整点仍在空闲内
+          continue;
+        }
+      }
+      return slot.start;                             // 取该空闲时段的开始时间
+    }
+    return null;
+  };
+
+  let suggested = tryFindSlot(0);
+  if (!suggested) suggested = tryFindSlot(1);        // 今天没有 → 看明天
+  if (!suggested) {                                  // 兜底：明天 9:00
+    suggested = new Date(now);
+    suggested.setDate(suggested.getDate() + 1);
+    suggested.setHours(9, 0, 0, 0);
+  }
+
   if (confirm(`🧠 智能安排：是否将「${taskData.title}」安排在 ${formatDateTime(suggested.toISOString())}？`)) {
     await window.api.updateTask(newTask.id, { dueDate: suggested.toISOString(), reminderTime: suggested.toISOString() });
     showToast(`📅 已安排在 ${formatDateTime(suggested.toISOString())}`, 'success');
@@ -1061,6 +1097,38 @@ function debounce(fn, ms) {
   let timer; return (...args) => { clearTimeout(timer); timer = setTimeout(() => fn(...args), ms); };
 }
 
+/* ─── Auto Update ──────────────────────────────────────────────────────── */
+let updateCheckedManually = false;
+function handleUpdateStatus(status) {
+  const el = $('#updateStatusText');
+  if (!el) return;
+  switch (status.state) {
+    case 'checking':
+      el.textContent = '正在检查更新…';
+      break;
+    case 'available':
+      el.textContent = `发现新版本 v${status.version}`;
+      if (updateCheckedManually) { // 仅手动点击检查时弹窗，启动自动检查静默提示
+        updateCheckedManually = false;
+        if (confirm(`发现新版本 v${status.version}，是否下载并安装？`)) window.api.downloadUpdate();
+      }
+      break;
+    case 'not-available':
+      el.textContent = '已是最新版本 ✅';
+      break;
+    case 'downloading':
+      el.textContent = `正在下载更新… ${status.percent}%`;
+      break;
+    case 'downloaded':
+      el.textContent = `v${status.version} 已下载完成`;
+      if (confirm(`v${status.version} 已下载完成，是否立即重启安装？`)) window.api.installUpdate();
+      break;
+    case 'error':
+      el.textContent = `更新失败：${status.message}`;
+      break;
+  }
+}
+
 /* ─── Event Listeners ──────────────────────────────────────────────────── */
 function setupEventListeners() {
   // Navigation
@@ -1122,6 +1190,14 @@ function setupEventListeners() {
   $('#addHabitBtn').addEventListener('click', openHabitModal);
   $('#habitModalCloseBtn').addEventListener('click', () => $('#habitModal').classList.remove('open'));
   $('#habitModalCancelBtn').addEventListener('click', () => $('#habitModal').classList.remove('open'));
+
+  // Auto update
+  $('#checkUpdateBtn').addEventListener('click', async () => {
+    updateCheckedManually = true;
+    $('#updateStatusText').textContent = '正在检查更新…';
+    const res = await window.api.checkForUpdates();
+    if (res && res.state === 'error') handleUpdateStatus(res);
+  });
   $('#habitModalSaveBtn').addEventListener('click', saveHabit);
   $('#habitModal').addEventListener('click', (e) => { if (e.target === $('#habitModal')) $('#habitModal').classList.remove('open'); });
 

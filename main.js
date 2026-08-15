@@ -1,6 +1,7 @@
 const { app, BrowserWindow, ipcMain, Tray, Menu, nativeTheme, Notification, nativeImage } = require('electron');
 const path = require('path');
 const fs = require('fs');
+const { autoUpdater } = require('electron-updater');
 
 // ─── Data Storage ───────────────────────────────────────────────────────
 const userDataPath = app.getPath('userData');
@@ -353,6 +354,28 @@ function setupIPC() {
   // ── Settings ──
   ipcMain.handle('get-settings', () => settings);
 
+  // ── App Info ──
+  ipcMain.handle('get-app-info', () => ({
+    version: app.getVersion(),
+    name: app.getName(),
+    isPackaged: app.isPackaged
+  }));
+
+  // ── Auto Update ──
+  ipcMain.handle('check-for-updates', () => {
+    if (!app.isPackaged) return { state: 'error', message: '当前为开发模式，打包后自动更新才可用' };
+    autoUpdater.checkForUpdates().catch(() => {});
+    return { state: 'checking' };
+  });
+  ipcMain.handle('download-update', () => {
+    autoUpdater.downloadUpdate().catch(() => {});
+    return true;
+  });
+  ipcMain.handle('install-update', () => {
+    autoUpdater.quitAndInstall(false, true);
+    return true;
+  });
+
   ipcMain.handle('update-settings', (event, newSettings) => {
     settings = { ...settings, ...newSettings };
     saveData();
@@ -398,6 +421,28 @@ function setupIPC() {
   });
 }
 
+// ─── Auto Update ────────────────────────────────────────────────────────
+function initAutoUpdater() {
+  if (!app.isPackaged) return; // 开发模式跳过（无 app-update.yml）
+
+  autoUpdater.autoDownload = false;      // 先提示，用户确认后再下载
+  autoUpdater.autoInstallOnAppQuit = true;
+
+  const sendStatus = (status) => {
+    if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('update-status', status);
+  };
+
+  autoUpdater.on('checking-for-update', () => sendStatus({ state: 'checking' }));
+  autoUpdater.on('update-available', (info) => sendStatus({ state: 'available', version: info.version }));
+  autoUpdater.on('update-not-available', (info) => sendStatus({ state: 'not-available', version: info.version }));
+  autoUpdater.on('download-progress', (p) => sendStatus({ state: 'downloading', percent: Math.round(p.percent) }));
+  autoUpdater.on('update-downloaded', (info) => sendStatus({ state: 'downloaded', version: info.version }));
+  autoUpdater.on('error', (err) => sendStatus({ state: 'error', message: err ? err.message : '未知错误' }));
+
+  // 启动后延迟静默检查，避免拖慢启动
+  setTimeout(() => { autoUpdater.checkForUpdates().catch(() => {}); }, 10000);
+}
+
 // ─── Single Instance Lock ───────────────────────────────────────────────
 // 只允许一个实例：重复点击 exe 时聚焦已有窗口/后台，而不是再开一个进程
 const gotTheLock = app.requestSingleInstanceLock();
@@ -417,6 +462,7 @@ if (!gotTheLock) {
     createWindow();
     createTray();
     startReminderChecker();
+    initAutoUpdater();
 
     // Follow system dark mode
     nativeTheme.on('updated', () => {

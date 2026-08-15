@@ -15,6 +15,12 @@ contextBridge.exposeInMainWorld('api', {
   getSettings: () => ipcRenderer.invoke('get-settings'),
   updateSettings: (settings) => ipcRenderer.invoke('update-settings', settings),
 
+  // App info & auto update
+  getAppInfo: () => ipcRenderer.invoke('get-app-info'),
+  checkForUpdates: () => ipcRenderer.invoke('check-for-updates'),
+  downloadUpdate: () => ipcRenderer.invoke('download-update'),
+  installUpdate: () => ipcRenderer.invoke('install-update'),
+
   // Notifications
   sendNotification: (title, body) => ipcRenderer.invoke('send-notification', { title, body }),
 
@@ -45,5 +51,10 @@ contextBridge.exposeInMainWorld('api', {
     const handler = () => callback();
     ipcRenderer.on('new-note', handler);
     return () => ipcRenderer.removeListener('new-note', handler);
+  },
+  onUpdateStatus: (callback) => {
+    const handler = (event, status) => callback(status);
+    ipcRenderer.on('update-status', handler);
+    return () => ipcRenderer.removeListener('update-status', handler);
   }
 });
