@@ -1,0 +1,59 @@
+{
+  "name": "smart-note-app",
+  "version": "1.0.0",
+  "description": "智能便签工作安排应用 - Smart Note & Workflow Scheduler",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --dev",
+    "build": "electron-builder",
+    "build:portable": "electron-builder --win portable",
+    "build:dir": "electron-builder --dir",
+    "dist": "electron-builder --win"
+  },
+  "build": {
+    "appId": "com.smartnote.app",
+    "productName": "智能便签",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "src/**/*",
+      "assets/**/*"
+    ],
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ],
+      "icon": "assets/icon.ico",
+      "artifactName": "${productName}-${version}-setup.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "runAfterFinish": true,
+      "shortcutName": "智能便签"
+    },
+    "extraMetadata": {
+      "main": "main.js"
+    }
+  },
+  "keywords": [
+    "note",
+    "scheduler",
+    "workflow",
+    "productivity"
+  ],
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^28.0.0",
+    "electron-builder": "^24.9.1"
+  },
+  "dependencies": {
+    "electron-packager": "^15.5.2"
+  }
+}

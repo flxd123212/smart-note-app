@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self' https://api.open-meteo.com https://geocoding-api.open-meteo.com https://api.openweathermap.org https://devapi.qweather.com https://cdn.heweather.com; img-src 'self' data:;">
+  <title>智能便签</title>
+  <link rel="icon" type="image/png" href="../assets/icon.png">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <!-- ═══ Sidebar ═══ -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header" style="padding-top:20px;">
+      <h1 class="app-title" style="display:flex;align-items:center;gap:8px;"><img src="../assets/icon.png" width="22" height="22" style="border-radius:4px;" />智能便签</h1>
+      <button class="icon-btn" id="toggleSidebarBtn">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+    </div>
+    <nav class="sidebar-nav">
+      <button class="nav-item active" data-view="tasks">
+        <span class="nav-icon-wrap"><svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg></span>
+        <span class="nav-label">任务</span>
+      </button>
+      <button class="nav-item" data-view="pomodoro">
+        <span class="nav-icon-wrap"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span>
+        <span class="nav-label">专注</span>
+      </button>
+      <button class="nav-item" data-view="habits">
+        <span class="nav-icon-wrap"><svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></span>
+        <span class="nav-label">习惯</span>
+      </button>
+      <button class="nav-item" data-view="workflow">
+        <span class="nav-icon-wrap"><svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="2"/><circle cx="5" cy="19" r="2"/><circle cx="19" cy="19" r="2"/><line x1="12" y1="7" x2="12" y2="10"/><line x1="7" y1="17.3" x2="9.4" y2="13.7"/><line x1="17" y1="17.3" x2="14.6" y2="13.7"/></svg></span>
+        <span class="nav-label">流程</span>
+      </button>
+      <button class="nav-item" data-view="calendar">
+        <span class="nav-icon-wrap"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>
+        <span class="nav-label">日历</span>
+      </button>
+      <button class="nav-item" data-view="stats">
+        <span class="nav-icon-wrap"><svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></span>
+        <span class="nav-label">统计</span>
+      </button>
+      <button class="nav-item" data-view="settings">
+        <span class="nav-icon-wrap"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg></span>
+        <span class="nav-label">设置</span>
+      </button>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="sidebar-footer-content">
+        <span class="stats-number" id="pendingCount">0</span>
+        <span class="stats-label">待完成</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ═══ Main Content ═══ -->
+  <main class="main-content" id="mainContent">
+
+    <!-- ═══ Tasks View ═══ -->
+    <section class="view active" id="view-tasks">
+      <div class="view-header">
+        <h2>
+          <svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+          任务列表
+        </h2>
+        <div class="view-actions">
+          <button class="btn btn-primary" id="addTaskBtn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+            新建任务
+          </button>
+          <div class="search-box">
+            <svg class="search-icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" id="searchInput" placeholder="搜索任务..." />
+          </div>
+          <div class="filter-group">
+            <select id="filterPriority">
+              <option value="all">全部</option>
+              <option value="high">高优先级</option>
+              <option value="medium">中优先级</option>
+              <option value="low">低优先级</option>
+            </select>
+            <select id="filterStatus">
+              <option value="all">全部</option>
+              <option value="pending">待完成</option>
+              <option value="done">已完成</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="quick-add-bar">
+        <span class="quick-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+        </span>
+        <input type="text" id="quickAddInput" placeholder="快速添加任务，支持智能识别… 例如：明天下午3点开会 #工作" />
+        <button class="btn btn-primary btn-small" id="quickAddBtn">添加</button>
+      </div>
+      <!-- 智能推荐面板 -->
+      <div class="recommend-panel glass-card" id="recommendPanel" style="display:none;margin-bottom:16px;padding:16px;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--green-primary)" stroke-width="2" stroke-linecap="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+          <span style="font-weight:600;font-size:0.9rem;">智能推荐</span>
+        </div>
+        <div id="recommendList"></div>
+      </div>
+      <div class="task-list" id="taskList">
+        <div class="empty-state">
+          <span class="empty-icon">📋</span>
+          <h3>还没有任务</h3>
+          <p>在上方快速添加，或点击「新建任务」</p>
+          <span class="hint">💡 试试输入「明天下午3点开会 #工作 高优先级」</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ Pomodoro View ═══ -->
+    <section class="view" id="view-pomodoro">
+      <div class="view-header">
+        <h2>
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          专注计时
+        </h2>
+      </div>
+      <div class="pomodoro-widget">
+        <div class="pomodoro-status" id="pomodoroStatus">🌱 准备开始</div>
+        <div class="pomodoro-timer" id="pomodoroTimer">25:00</div>
+        <div class="pomodoro-controls">
+          <button class="btn btn-primary" id="pomodoroStartBtn">▶ 开始</button>
+          <button class="btn btn-secondary" id="pomodoroPauseBtn" disabled>⏸ 暂停</button>
+          <button class="btn btn-secondary" id="pomodoroResetBtn">↺ 重置</button>
+        </div>
+        <div class="pomodoro-rounds" id="pomodoroRounds">
+          <span class="pomodoro-round current"></span>
+          <span class="pomodoro-round"></span>
+          <span class="pomodoro-round"></span>
+          <span class="pomodoro-round"></span>
+        </div>
+        <div style="margin-top:10px;font-size:0.78rem;color:var(--text-muted);">
+          已完成 <span id="pomodoroCompletedCount">0</span> 个番茄
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ Habits View ═══ -->
+    <section class="view" id="view-habits">
+      <div class="view-header">
+        <h2>
+          <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+          习惯追踪
+        </h2>
+        <div class="view-actions">
+          <button class="btn btn-primary" id="addHabitBtn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+            新建习惯
+          </button>
+        </div>
+      </div>
+      <div class="habit-grid" id="habitGrid">
+        <div class="empty-state">
+          <span class="empty-icon">⭐</span>
+          <h3>还没有习惯</h3>
+          <p>添加一个习惯，开始每日追踪吧！</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ Workflow View ═══ -->
+    <section class="view" id="view-workflow">
+      <div class="view-header">
+        <h2>
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="2"/><circle cx="5" cy="19" r="2"/><circle cx="19" cy="19" r="2"/><line x1="12" y1="7" x2="12" y2="10"/><line x1="7" y1="17.3" x2="9.4" y2="13.7"/><line x1="17" y1="17.3" x2="14.6" y2="13.7"/></svg>
+          工作流程
+        </h2>
+        <div class="view-actions">
+          <button class="btn btn-primary" id="addWorkflowBtn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+            新建流程
+          </button>
+        </div>
+      </div>
+      <div class="workflow-canvas" id="workflowCanvas">
+        <div class="empty-state">
+          <span class="empty-icon">🔗</span>
+          <h3>还没有工作流程</h3>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ Calendar View ═══ -->
+    <section class="view" id="view-calendar">
+      <div class="view-header">
+        <h2>
+          <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          日历视图
+        </h2>
+        <div class="view-actions">
+          <button class="btn btn-secondary" id="calendarPrevBtn">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+          </button>
+          <span class="calendar-current" id="calendarCurrent" style="font-weight:600;min-width:120px;text-align:center;font-size:0.9rem;">2024年1月</span>
+          <button class="btn btn-secondary" id="calendarNextBtn">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+          <button class="btn btn-secondary" id="calendarTodayBtn">今天</button>
+        </div>
+      </div>
+      <!-- 天气面板 -->
+      <div class="weather-panel glass-card" id="weatherPanel" style="margin-bottom:16px;padding:16px;display:none;">
+        <div id="weatherContent" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+          <div style="display:flex;align-items:center;gap:12px;">
+            <span id="weatherIcon" style="font-size:2.5rem;">☀️</span>
+            <div>
+              <div style="font-size:1.8rem;font-weight:700;" id="weatherTemp">--°C</div>
+              <div style="font-size:0.8rem;color:var(--text-muted);" id="weatherDesc">加载中...</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:16px;font-size:0.8rem;color:var(--text-secondary);" id="weatherDetails">
+            <span>💧 <span id="weatherHumidity">--</span>%</span>
+            <span>💨 <span id="weatherWind">--</span>级</span>
+            <span id="weatherCity" style="cursor:pointer;" title="点击切换城市">📍 <span id="weatherCityName">--</span> <span style="font-size:0.65rem;opacity:0.7;">▼</span></span>
+          </div>
+          <div id="weatherSuggestions" style="font-size:0.8rem;color:var(--text-muted);width:100%;"></div>
+        </div>
+        <div id="weatherForecast" style="display:flex;gap:12px;margin-top:12px;padding-top:12px;border-top:1px solid var(--glass-border);"></div>
+      </div>
+      <div id="lunarInfoBar" style="display:flex;gap:16px;margin-bottom:12px;font-size:0.8rem;color:var(--text-muted);padding:0 4px;flex-wrap:wrap;"></div>
+      <div class="calendar-grid" id="calendarGrid"></div>
+      <div class="calendar-tasks" id="calendarTasks">
+        <h3 id="selectedDateTitle">选择日期查看任务</h3>
+        <div id="selectedDateTasks"></div>
+      </div>
+    </section>
+
+    <!-- ═══ Statistics View ═══ -->
+    <section class="view" id="view-stats">
+      <div class="view-header">
+        <h2>
+          <svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+          统计
+        </h2>
+      </div>
+      <div class="stats-grid" id="statsGrid">
+        <div class="stat-card">
+          <div class="stat-number" id="statTotalTasks">0</div>
+          <div class="stat-label">总任务数</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number" id="statCompletedTasks">0</div>
+          <div class="stat-label">已完成</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number" id="statCompletionRate">0%</div>
+          <div class="stat-label">完成率</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number" id="statStreak">0</div>
+          <div class="stat-label">连续天数</div>
+        </div>
+      </div>
+      <div class="stat-chart">
+        <h3>本周趋势</h3>
+        <div class="chart-bar-container" id="chartBars"></div>
+      </div>
+    </section>
+
+    <!-- ═══ Settings View ═══ -->
+    <section class="view" id="view-settings">
+      <div class="view-header">
+        <h2>
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+          设置
+        </h2>
+      </div>
+      <div class="settings-content">
+        <div class="settings-group">
+          <h3>🎨 外观</h3>
+          <div class="setting-item">
+            <div class="setting-info">
+              <label>深色模式</label>
+              <p class="setting-desc">跟随系统 / 始终深色 / 始终浅色</p>
+            </div>
+            <select id="settingDarkMode" style="width:140px;">
+              <option value="system">🌓 跟随系统</option>
+              <option value="dark">🌙 深色</option>
+              <option value="light">☀️ 浅色</option>
+            </select>
+          </div>
+        </div>
+        <div class="settings-group">
+          <h3>⚡ 启动与托盘</h3>
+          <div class="setting-item">
+            <div class="setting-info">
+              <label>开机自启动</label>
+              <p class="setting-desc">开机后自动启动智能便签</p>
+            </div>
+            <label class="toggle">
+              <input type="checkbox" id="settingAutoStart">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          <div class="setting-item">
+            <div class="setting-info">
+              <label>最小化到系统托盘</label>
+              <p class="setting-desc">关闭时最小化到托盘</p>
+            </div>
+            <label class="toggle">
+              <input type="checkbox" id="settingMinimizeToTray" checked>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+        </div>
+        <div class="settings-group">
+          <h3>🧠 智能捕获</h3>
+          <div class="setting-item">
+            <div class="setting-info">
+              <label>智能解析</label>
+              <p class="setting-desc">自动识别日期、时间、优先级和标签</p>
+            </div>
+            <label class="toggle">
+              <input type="checkbox" id="settingSmartCapture" checked>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          <div class="setting-item">
+            <div class="setting-info">
+              <label>智能安排建议</label>
+              <p class="setting-desc">新任务自动建议空闲时段</p>
+            </div>
+            <label class="toggle">
+              <input type="checkbox" id="settingSmartSchedule" checked>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+        </div>
+        <div class="settings-group">
+          <h3>🔔 提醒</h3>
+          <div class="setting-item">
+            <div class="setting-info">
+              <label>启用提醒</label>
+              <p class="setting-desc">到达提醒时间时弹出通知</p>
+            </div>
+            <label class="toggle">
+              <input type="checkbox" id="settingReminders" checked>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          <div class="setting-item">
+            <div class="setting-info">
+              <label>提前提醒</label>
+              <p class="setting-desc">提前多久提醒</p>
+            </div>
+            <select id="settingNotifyBefore" style="width:120px;">
+              <option value="0">准时</option>
+              <option value="5">5分钟</option>
+              <option value="15" selected>15分钟</option>
+              <option value="30">30分钟</option>
+              <option value="60">1小时</option>
+            </select>
+          </div>
+        </div>
+        <div class="settings-group">
+          <h3>🌐 天气 &amp; 联网</h3>
+          <div class="setting-item">
+            <div class="setting-info">
+              <label>天气服务</label>
+              <p class="setting-desc">选择天气数据来源</p>
+            </div>
+            <select id="settingWeatherProvider" style="width:195px;">
+              <option value="openmeteo">🌤 Open-Meteo（免Key）</option>
+              <option value="openweather">🌐 OpenWeatherMap</option>
+              <option value="hefeng">🌐 和风天气</option>
+            </select>
+          </div>
+          <div class="setting-item">
+            <div class="setting-info">
+              <label>API Key</label>
+              <p class="setting-desc">天气 API 密钥（免费注册获取）</p>
+            </div>
+            <input type="text" id="settingWeatherApiKey" placeholder="输入 API Key" style="width:200px;" />
+          </div>
+          <div class="setting-item">
+            <div class="setting-info">
+              <label>获取位置</label>
+              <p class="setting-desc">自动获取天气需要位置权限</p>
+            </div>
+            <button class="btn btn-secondary btn-small" id="requestLocationBtn">📍 获取位置</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ═══ Modal: Task ═══ -->
+  <div class="modal-overlay" id="taskModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="modalTitle">新建任务</h3>
+        <button class="icon-btn modal-close" id="modalCloseBtn">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>任务内容</label>
+          <input type="text" id="taskTitle" placeholder="输入任务内容，支持智能识别…" autofocus />
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>截止日期</label>
+            <input type="date" id="taskDueDate" />
+          </div>
+          <div class="form-group">
+            <label>提醒时间</label>
+            <input type="datetime-local" id="taskReminderTime" />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>优先级</label>
+            <select id="taskPriority">
+              <option value="low">低</option>
+              <option value="medium" selected>中</option>
+              <option value="high">高</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>标签</label>
+            <input type="text" id="taskTags" placeholder="逗号分隔" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label>备注</label>
+          <textarea id="taskNote" rows="3" placeholder="附加说明..."></textarea>
+        </div>
+        <div class="form-group" id="smartParseResult" style="display:none;">
+          <div class="parse-result-box">
+            <strong>🧠 智能识别：</strong>
+            <span id="parseInfo"></span>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="modalCancelBtn">取消</button>
+        <button class="btn btn-primary" id="modalSaveBtn">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ Modal: Workflow ═══ -->
+  <div class="modal-overlay" id="workflowModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>新建工作流程</h3>
+        <button class="icon-btn modal-close" id="workflowModalCloseBtn">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>流程名称</label>
+          <input type="text" id="workflowName" placeholder="例如：日报准备流程" />
+        </div>
+        <div class="form-group">
+          <label>选择任务</label>
+          <div class="workflow-task-select" id="workflowTaskSelect"></div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="workflowModalCancelBtn">取消</button>
+        <button class="btn btn-primary" id="workflowModalSaveBtn">创建</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ Modal: Habit ═══ -->
+  <div class="modal-overlay" id="habitModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>新建习惯</h3>
+        <button class="icon-btn modal-close" id="habitModalCloseBtn">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>习惯名称</label>
+          <input type="text" id="habitName" placeholder="例如：阅读30分钟" />
+        </div>
+        <div class="form-group">
+          <label>图标</label>
+          <select id="habitIcon">
+            <option value="📚">📚 阅读</option>
+            <option value="🏃">🏃 运动</option>
+            <option value="💧">💧 喝水</option>
+            <option value="🧘">🧘 冥想</option>
+            <option value="✍️">✍️ 写作</option>
+            <option value="🎯">🎯 目标</option>
+            <option value="🌱" selected>🌱 习惯</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="habitModalCancelBtn">取消</button>
+        <button class="btn btn-primary" id="habitModalSaveBtn">创建</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ Toast ═══ -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <script src="lunar.js"></script>
+  <script src="weather.js"></script>
+  <script src="recommend.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
